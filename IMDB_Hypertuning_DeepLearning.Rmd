@@ -1,0 +1,384 @@
+---
+title: "Neural Networks Model Hypertuning"
+author: "Srushti Padade"
+date: "February 2, 2020"
+output: word_document
+---
+
+The library Keras is used fo the to load the IMDB Dataset in the workspace. The top most occuring words are considered for our deep learning model.
+
+```{r}
+
+library(keras)
+
+imdb <- dataset_imdb(num_words = 10000)
+c(c(train_data, train_labels), c(test_data, test_labels)) %<-% imdb
+
+#The dataset is vectorized here by Create an all-zero matrix of shape (len(sequences), dimension) and Sets specific indices of results[i] to 1s.
+
+vectorize_sequences <- function(sequences, dimension = 10000) {
+  results <- matrix(0, nrow = length(sequences), ncol = dimension)
+  for (i in 1:length(sequences))
+    results[i, sequences[[i]]] <- 1
+  results
+}
+
+#Vectorized the Train and Test data.
+x_train <- vectorize_sequences(train_data)
+x_test <- vectorize_sequences(test_data)
+str(x_train[1,])
+
+y_train <- as.numeric(train_labels)
+y_test <- as.numeric(test_labels)
+
+#From the Train data 40 % of data is allocated from Validation data.
+set.seed(123)
+val_indices <- 1:10000
+
+x_val <- x_train[val_indices,]
+partial_x_train <- x_train[-val_indices,]
+
+y_val <- y_train[val_indices]
+partial_y_train <- y_train[-val_indices]
+```
+
+##Layers Hypertuning
+
+#Model 2:
+
+Model Layers - 2
+
+```{r}
+model_Layer_1 <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu",input_shape = c(10000)) %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_Layer_1 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model_Layer_1 %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val))
+
+plot(history)
+
+model_Layer_1 %>% fit(x_train, y_train, epochs = 5, batch_size = 512)
+Result_model_Layer_1 <- model_Layer_1 %>% evaluate(x_test, y_test)
+Result_model_Layer_1
+```
+
+#Model 2:
+
+Model Layers - 2
+
+```{r}
+model_Layer_2 <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu",input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "relu")%>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_Layer_2 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model_Layer_2 %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val))
+
+plot(history)
+
+model_Layer_2 %>% fit(x_train, y_train, epochs = 5, batch_size = 512)
+Result_model_Layer_2 <- model_Layer_2 %>% evaluate(x_test, y_test)
+Result_model_Layer_2
+```
+
+#Model 3:
+
+Model Layers - 3
+
+```{r}
+model_Layer_3 <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu",input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "relu")%>%
+  layer_dense(units = 16, activation = "relu")%>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_Layer_3 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model_Layer_2 %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val))
+
+plot(history)
+
+model_Layer_3 %>% fit(x_train, y_train, epochs = 1, batch_size = 512)
+Result_model_Layer_3 <- model_Layer_3 %>% evaluate(x_test, y_test)
+Result_model_Layer_3
+```
+
+## Units Hypertuning
+
+#Model 4:
+
+Model Units - 4
+
+```{r}
+model_unit_4 <- keras_model_sequential() %>% 
+  layer_dense(units = 4, activation = "relu",input_shape = c(10000)) %>%
+  layer_dense(units = 4, activation = "relu")%>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_unit_4 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model_unit_4 %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val))
+
+plot(history)
+
+model_unit_4 %>% fit(x_train, y_train, epochs = 8, batch_size = 512)
+Result_model_unit_4 <- model_unit_4 %>% evaluate(x_test, y_test)
+Result_model_unit_4
+```
+
+#Model 5:
+
+Model Units - 64
+
+```{r}
+model_unit_64 <- keras_model_sequential() %>% 
+  layer_dense(units = 64, activation = "relu",input_shape = c(10000)) %>%
+  layer_dense(units = 64, activation = "relu")%>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_unit_64 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model_unit_64 %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val))
+
+plot(history)
+
+model_unit_64 %>% fit(x_train, y_train, epochs = 3, batch_size = 512)
+Result_model_unit_64 <- model_unit_64 %>% evaluate(x_test, y_test)
+Result_model_unit_64
+```
+
+#Model 6:
+
+Model Units - 128
+
+```{r}
+model_unit_128 <- keras_model_sequential() %>% 
+  layer_dense(units = 128, activation = "relu",input_shape = c(10000)) %>%
+  layer_dense(units = 128, activation = "relu")%>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_unit_128 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model_unit_128 %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val))
+
+plot(history)
+
+model_unit_128 %>% fit(x_train, y_train, epochs = 2, batch_size = 512)
+Result_model_unit_128 <- model_unit_128 %>% evaluate(x_test, y_test)
+Result_model_unit_128
+```
+
+## Loss Function
+
+#Model 7:
+
+Model Loss - MSE
+
+```{r}
+model_mse <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu",input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "relu")%>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_mse %>% compile(
+  optimizer = "rmsprop",
+  loss = "mse",
+  metrics = c("accuracy")
+)
+
+history <- model_mse %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val))
+
+plot(history)
+
+model_mse %>% fit(x_train, y_train, epochs = 4, batch_size = 512)
+Result_model_mse <- model_mse %>% evaluate(x_test, y_test)
+Result_model_mse
+```
+
+## Activation Function
+
+Model Activation function - tanh
+
+```{r}
+model_tanh <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "tanh",input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "tanh")%>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_tanh %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model_tanh %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val))
+
+plot(history)
+
+model_tanh %>% fit(x_train, y_train, epochs = 3, batch_size = 512)
+Result_model_tanh <- model_tanh %>% evaluate(x_test, y_test)
+Result_model_tanh
+```
+
+## Regularisation 
+
+Model Regularizer - L2
+
+```{r}
+model_reg_2 <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu", kernel_regularizer = regularizer_l2(l = 0.001), input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "relu", kernel_regularizer = regularizer_l2(l = 0.001))%>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_reg_2 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model_reg_2 %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val))
+
+plot(history)
+
+model_reg_2 %>% fit(x_train, y_train, epochs = 4, batch_size = 512)
+Result_model_reg_2 <- model_reg_2 %>% evaluate(x_test, y_test)
+Result_model_reg_2
+```
+
+## Dropout 
+
+Model Droupout - 0.5
+
+```{r}
+model_dropout <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu",input_shape = c(10000)) %>%
+    layer_dropout(rate = 0.5) %>%
+  layer_dense(units = 16, activation = "relu")%>%
+    layer_dropout(rate = 0.5) %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_dropout %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model_dropout %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val))
+
+plot(history)
+
+model_dropout %>% fit(x_train, y_train, epochs = 8, batch_size = 512)
+Result_model_dropout <- model_dropout %>% evaluate(x_test, y_test)
+Result_model_dropout
+```
+
+## Final Model with Hypertunned Parameters.
+
+```{r}
+model_Final <- keras_model_sequential() %>% 
+  layer_dense(units = 32, activation = "relu",kernel_regularizer = regularizer_l2(l = 0.001), input_shape = c(10000)) %>% 
+  layer_dropout(rate = 0.5) %>%
+  layer_dense(units = 16, activation = "relu",kernel_regularizer = regularizer_l2(l = 0.001)) %>% 
+  layer_dropout(rate = 0.5) %>%
+  layer_dense(units = 32, activation = "relu",kernel_regularizer = regularizer_l2(l = 0.001)) %>%
+  layer_dropout(rate = 0.5) %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_Final %>% compile(
+  optimizer = "rmsprop",
+  loss = "mse",
+  metrics = c("accuracy")
+)
+
+history <- model_Final %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val))
+
+plot(history)
+
+model_Final %>% fit(x_train, y_train, epochs = 4, batch_size = 512)
+Result_model_Final <- model_Final %>% evaluate(x_test, y_test)
+Result_model_Final
+
+```
