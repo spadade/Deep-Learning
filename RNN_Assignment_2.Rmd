@@ -2,13 +2,22 @@
 title: "Deep Learning RNN - IMDB data sentiment analysis"
 author: "Srushti Padade"
 date: "March 1, 2020"
-output: html_document
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+    toc: true
+    df_print: paged
 ---
+
+# **Library**
 
 For the Deep learning we are using Keras libarary.
 ```{r}
 library(keras)
 ```
+
+# **Labeling**
 
 The IMDB data set is loaded in the environment and train and test data is stored separtely. The data is labelled based on the Positive and Negative reviews.
 
@@ -28,13 +37,19 @@ for (label_type in c("neg", "pos")) {
 }
 ```
 
-The reviews are cut off after 150 words
+# **Altering the requirements
+
+## Cut 0ff to 150 words
+
+The reviews are cut off after 150 words. Originally we had cut off of 200 words.
 
 ```{r}
 maxlen <- 150
 ```
 
-Training dataset is kept for 100 samples
+## Reducing Training sample size to 100 samples
+
+Training dataset is kept for 100 samples. Intially the sample size was 10000.
 
 ```{r}
 training_samples <- 100
@@ -51,6 +66,8 @@ The top 10,000 words in the dataset are considered
 ```{r}
 max_words <- 10000
 ```
+
+# **Text to Tensors**
 
 The imdb review data are tokenized and converted into tensors.
 
@@ -69,6 +86,8 @@ cat("Shape of Data Tensor:", dim(data), "\n")
 cat('Shape of Label Tensor:', dim(labels), "\n")
 ```
 
+# **Data Partitioning**
+
 Splitting the data into training and validation samples by random sampling.
 
 ```{r}
@@ -85,7 +104,7 @@ x_val <- data[validation_indices,]
 y_val <- labels[validation_indices]
 ```
 
-#Pretrainned Network (Word Embedding).
+# **Pretrainned Network (Word Embedding)**
 
 Loading the Glove Algorithm by loading Pre-processed the embeddings of Glove.
 The glove text file consist of the embedding layer where there is 100-dimensional embedding vectors for 400,000 words (or non-word tokens).
@@ -95,7 +114,7 @@ glove_dir = 'D:/Advance_ML/glove.6B'
 lines <- readLines(file.path(glove_dir, "glove.6B.100d.txt"))
 ```
 
-Pre processing the Embedding layer.
+## **Pre processing the Embedding layer**
 
 ```{r}
 embeddings_index <- new.env(hash = TRUE, parent = emptyenv())
@@ -108,6 +127,8 @@ for (i in 1:length(lines)) {
 
 cat("Found", length(embeddings_index), "word vectors.\n")
 ```
+
+## **Embedding Matrix**
 
 Building an embedding matrix that can be loaded into an embedding layer
 
@@ -126,7 +147,9 @@ for (word in names(word_index)) {
 }
 ```
 
-Building a training model
+## **Model Building**
+
+- Building a training model similar to original model with one embedding layer and one dense layer.
 
 ```{r}
 model <- keras_model_sequential() %>% 
@@ -139,7 +162,7 @@ model <- keras_model_sequential() %>%
 summary(model)
 ```
 
-Load the pretrained GloVe embeddings in the model
+- Load the pretrained GloVe embeddings in the model
 
 ```{r}
 get_layer(model, index = 1) %>% 
@@ -153,7 +176,7 @@ model %>% compile(
 )
 ```
 
-Evaluating validation data on train model
+- Evaluating validation data on train model
 
 ```{r}
 history <- model %>% fit(
@@ -165,7 +188,9 @@ history <- model %>% fit(
 plot(history)
 ```
 
-Hypertunning the model based on the epoch  up to the elbow point.
+## **Hypertuning**
+
+- Hypertunning the model based on the epoch  up to the elbow point.
 
 ```{r}
 model %>% fit(
@@ -175,16 +200,16 @@ model %>% fit(
   batch_size = 32)
 ```
 
-Testing the model on entire data set.
+- Testing the model on entire data set.
 
 ```{r}
 Pretrain_result <- model %>%  evaluate(data,y_data)
 Pretrain_result 
 ```
 
-The model have very less accuracy of 56.18% for total data and for validation data its 55.48%.
+**The model have very less accuracy of 56.18% for total data and for validation data its 55.48%.**
 
-#Embedding Layer
+# **Embedding Layer**
 
 Using an embedding layer and Classifier on the IMDB data to build a model
 
@@ -216,7 +241,7 @@ history1 <- model %>% fit(
 plot(history1)
 ```
 
-Hypertuning and building final model.
+## **Hypertuning and building final model**
 
 ```{r}
 model %>% fit(
@@ -226,28 +251,39 @@ model %>% fit(
   batch_size = 32)
 ```
 
-Evalutaing model on validation data.
+- Evalutaing model on validation data.
 
-Evaluating the entire data set on the final model to get the final result using embedding layer.
+- Evaluating the entire data set on the final model to get the final result using embedding layer.
 
 ```{r}
 Embedding_result <- model %>%  evaluate(data, y_data)
 Embedding_result
 ```
 
-The model performs poorly for the validation data as well as the test data set. The fewer sample training do not performs very well in predicting. The Validation set accuracy is only 52.28% whereas that of final test set it is about 52.8%.
+The model performs poorly for the validation data as well as the test data set. The fewer sample training do not performs very well in predicting. **The Validation set accuracy is only 52.28% whereas that of final test set it is about 52.8%.**
 
 ```{r}
-rbind(Embedding_result, Pretrain_result)
+OriginlEmbedding <- c(0.52553, 0.75625)
+OriginalPretrain <- c(0.85127,0.59076)
+Result <- rbind.data.frame(Embedding_result, Pretrain_result, OriginlEmbedding, OriginalPretrain)
+rownames(Result) <- c("Embedding_result", "Pretrain_result", "OriginlEmbedding", "OriginalPretrain")
+
+Result
 ```
 
-As we could see in the Result we could conclude that:
+# **Summary**
 
-- Train Set: 100 sample
-Since we are using very less sample set for traing purpose, the model could not extract the features of the data and thus the performance is not so good.
+As we could see in the Result Table, we could conclude that:
 
-- Training Techniques
-Similarly using the pretrained layer the performance seems to be slightly better then the embedding layer. But the loss is high for Pretrained network.
+- **Train Set: 100 sample**
+-- Since we are using very less sample set for training purpose, the model could not extract the features of the data and thus the performance is not so good.
 
-- Review cutoff length: 150 words 
-The length of the sample is also kept only of 150 words which also maybe one of the reason that the model have not performed well. The review may be incomplete and thus the wrong prediction.
+- **Training Techniques**
+-- Similarly using the pretrained layer the performance seems to be slightly better then the embedding layer. But the loss is high for Pretrained network.
+
+- **Review cutoff length: 150 words** 
+-- The length of the sample is also kept only of 150 words which also maybe one of the reason that the model have not performed well. The review may be incomplete and thus the wrong prediction.
+
+Hence looking at the Loss and Accuracy we could conclue that the best model that was built for IMDB dataset is **Embedding Layer** model from the cut off count of 200, training sample of 10,000 where we got accuracy of **~75%** and loss is much lesser of about **52%**.
+
+Althought, this may not be true with respect to all type of text mining and hypertuning always matters. We can always build a better model with certain hypertuning measures and by implementing methods under right circumtances.
