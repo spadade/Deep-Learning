@@ -1,0 +1,210 @@
+---
+title: "Weather Forcasting using Recurrent Neural Network"
+author: "Srushti Padade"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+    toc: true
+---
+
+# **Problem Statement**
+
+Use any or all of the methods to improve weather forecasting for the problem we discussed in class. For example, by adjusting the number of units in each recurrent layer in the stacked setup, or using layer_lstm() instead of layer_gru().
+
+You can also try experimenting with a combination of 1d_convnets and rnn.
+
+Don’t forget to eventually run the best-performing models (in terms of validation MAE) on the test set.
+
+# Libraries
+
+```{r, eval=FALSE}
+library(tibble)
+library(readr)
+library(keras)
+library(tensorflow)
+```
+
+# Data Loading
+
+```{r, eval=FALSE}
+data <- read_csv("./jena_climate_2009_2016.csv")
+```
+
+# Data Normalization
+
+The data cannot be normalized directly as the coresion occures, resulting in insertion of NA's in the data.
+Hence we have considered a sample of data and by finding center and standard deviation on this data normalized the entire dataset.
+
+```{r, eval=FALSE}
+train_data <- data[1:200000,]
+mean <- apply(train_data, 2, mean)
+std <- apply(train_data, 2, sd)
+data <- scale(data, center = mean, scale = std)
+```
+
+# Recurrent Neural Network Model
+
+## Defining Generator function
+
+```{r, eval=FALSE}
+generator <- function(data, lookback, delay, min_index, max_index,
+                      shuffle = FALSE, batch_size = 128, step = 6) {
+  if (is.null(max_index))
+    max_index <- nrow(data) - delay - 1
+  i <- min_index + lookback
+  
+  function() {
+    if (shuffle) {
+      rows <- sample(c((min_index+lookback):max_index), size = batch_size)
+    } else {
+      if (i + batch_size >= max_index)
+        i <<- min_index + lookback
+      rows <- c(i:min(i+batch_size-1, max_index))
+      i <<- i + length(rows)
+    }
+    
+    samples <- array(0, dim = c(length(rows), 
+                                lookback / step,
+                                dim(data)[[-1]]))
+    targets <- array(0, dim = c(length(rows)))
+    
+    for (j in 1:length(rows)) {
+      indices <- seq(rows[[j]] - lookback, rows[[j]] - 1, 
+                     length.out = dim(samples)[[2]])
+      samples[j,,] <- data[indices,]
+      targets[[j]] <- data[rows[[j]] + delay,2]
+    }            
+    
+    list(samples, targets)
+  }
+}
+```
+
+## Storing the paratmeters for the generator and Modeling
+
+```{r, eval=FALSE}
+lookback <- 1440
+step <- 6
+delay <- 144
+batch_size <- 128
+```
+
+## Model building
+
+we are using the same dataset for Training, validation and testing by partitioning the dataset as 1: 200000 for training, 200001:300000 for validation and remaining as testing.
+
+### Training Generator Model
+
+```{r, eval=FALSE}
+Train_Gen <- generator(
+  data,
+  lookback = lookback,
+  delay = delay,
+  min_index = 1,
+  max_index = 200000,
+  shuffle = TRUE,
+  step = step, 
+  batch_size = batch_size
+)
+```
+
+### Validation Generator Model
+
+```{r, eval=FALSE}
+Valid_Gen = generator(
+  data,
+  lookback = lookback,
+  delay = delay,
+  min_index = 200001,
+  max_index = 300000,
+  step = step,
+  batch_size = batch_size
+)
+```
+
+### Testing Generator Model
+
+```{r, eval=FALSE}
+Test_Gen <- generator(
+  data,
+  lookback = lookback,
+  delay = delay,
+  min_index = 300001,
+  max_index = NULL,
+  step = step,
+  batch_size = batch_size
+)
+```
+
+### Defining the Validation and Testing steps for RNN
+
+The steps are drawn from the generators defined above.
+
+```{r, eval=FALSE}
+val_steps <- (300000 - 200001 - lookback) / batch_size
+test_steps <- (nrow(data) - 300001 - lookback) / batch_size
+```
+
+## RNN-Model
+
+We have hypertunned the model using layer_lstm and altering the number of the input tensors.
+
+```{r, eval=FALSE}
+model <- keras_model_sequential() %>% 
+  layer_lstm(units = 32, 
+            dropout = 0.1, 
+            recurrent_dropout = 0.5,
+            return_sequences = TRUE,
+            input_shape = list(NULL, dim(data)[[-1]])) %>% 
+  layer_lstm(units = 64, activation = "relu",
+            dropout = 0.1,
+            recurrent_dropout = 0.5) %>% 
+  layer_dense(units = 1)
+```
+
+### Compiling the model using loss function as MSE
+
+```{r, eval=FALSE}
+model %>% compile(
+  optimizer = optimizer_rmsprop(lr = 0.001),
+  loss = c("mse")
+)
+```
+
+### Model implementation on training generator and validating on Validation generator.
+
+```{r, eval=FALSE}
+history <- model %>% fit_generator(
+  Train_Gen,
+  steps_per_epoch = 500,
+  epochs = 40,
+  validation_data = Valid_Gen,
+  validation_steps = val_steps)
+```
+
+### Plot of Model
+
+```{r, eval=FALSE}
+plot(history)
+```
+
+### Implementing model on Test set -  An Example
+
+The model will fit on the test set based on the epochs and the steps_per_epochs which suits the best on validation history, as an example I have used 25 epochs and 500 steps per ecochs.
+
+```{r, eval=FALSE}
+model %>% fit_generator(
+  Train_Gen,
+  steps_per_epoch = 500,
+  epochs = 15,
+  validation_data = Test_Gen,
+  validation_steps = test_steps)
+```
+
+# Summary
+
+The original models were overfitting at the early epochs using the simple rnn layer while building the rnn model and eventually by using the first recurrent baseline the model started working better. Similarly, the dropout also helped in building a better rnn model.
+Therefore, I have tried using the combination for RNN with layer_lstm and drop together to build the above model.
+
+*NOTE: I could not execute the code due to computational limitations and thus provided with the model I think will work the best.*
